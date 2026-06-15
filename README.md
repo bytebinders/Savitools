@@ -1,88 +1,83 @@
 # SaviTools
 
-**Professional developer infrastructure for the Stellar ecosystem.**
+**A developer workstation for building on Stellar.**
 
-SaviTools is the foundational engineering layer of the [Savitura](https://savitura.com) ecosystem — a developer workstation for builders creating payment systems, wallets, settlement infrastructure, and fintech applications on Stellar.
+SaviTools is a standalone product in the [Savitura](https://savitura.com) ecosystem. It gives developers the tools they need to build, test, and debug Stellar-based payment applications — without needing a terminal, Rust toolchain, or deep protocol knowledge.
 
-> "Stripe + Vercel + Postman — for Stellar developers."
-
----
-
-## Ecosystem
-
-```
-Savitura
-├── Fluxa          — Payments API, checkout infrastructure, treasury
-├── CrowdPay       — Crowdfunding and collaborative funding
-└── SaviTools      — Developer tooling, wallet infra, simulators, webhooks
-```
+> **Status**: Active development — testnet only.
 
 ---
 
-## Platform Modules
+## Tools
 
-| Module | Description | Status |
+| Tool | What it does | Status |
 |---|---|---|
-| Transaction Inspector | Decode, visualize, and annotate Stellar transactions and XDR | MVP |
-| Wallet Sandbox | Generate keypairs, fund testnet accounts, manage trustlines | MVP |
-| Transaction Composer | Visual builder for multi-operation Stellar transactions | MVP |
-| Webhook Infrastructure | Real-time Stellar event subscriptions with retry delivery | MVP |
-| Payment Simulator | Simulate path payments, preview routing and fee estimates | Planned |
-| Multi-Sig Builder | Signer configuration, threshold management, policy testing | Planned |
-| Trustline Manager | Create/remove trustlines, asset discovery, limit management | Planned |
-| Ledger Monitor | Operational observability, transaction streams, analytics | Planned |
-| API Playground | Interactive Horizon query builder with response visualization | Planned |
+| **Transaction Inspector** | Decode any tx hash, Stellar address, or raw XDR into a human-readable breakdown | In progress |
+| **Wallet Sandbox** | Generate testnet keypairs, fund via Friendbot, send test payments | In progress |
+| **Transaction Composer** | Visual builder for multi-operation Stellar transactions; sign and submit without code | In progress |
+| **Payment Simulator** | Find path payment routes between assets; preview hops, rates, and fees | In progress |
+| **Webhook Tester** | Fire sample CrowdPay / Fluxa webhook payloads at your endpoint; inspect the response | In progress |
+| **Ledger Monitor** | Watch a Stellar address or contract for live activity; set threshold alerts | Planned |
+| **API Playground** | Interactive request builder for Fluxa and CrowdPay APIs | Planned |
+| **Contract Deploy Helper** | Upload and deploy Soroban WASM files to testnet from the browser | Planned |
+| **SDK Generator** | Generate copy-paste client code (JS, Python, Go, cURL) from Fluxa/CrowdPay endpoints | Planned |
+| **Network Status** | Live Stellar network health: ledger close time, fee tracker, Horizon latency | Planned |
 
 ---
 
-## Tech Stack
+## Architecture
 
-### Frontend — `apps/web`
-- **Next.js 15** (App Router)
-- **TypeScript**
-- **Tailwind CSS**
-- **shadcn/ui** (Radix UI primitives)
+```
+Browser ──────────────────────────────────────────────────────────────────
+  Next.js 15 (App Router) │ TypeScript │ Tailwind CSS │ shadcn/ui
+──────────────────────────────────────────────────────────────────────────
+                           │ HTTP
+                           ▼
+API ──────────────────────────────────────────────────────────────────────
+  NestJS (Fastify adapter) │ TypeORM │ BullMQ │ Swagger at /api/docs
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ modules: transaction · wallet · simulator · webhook             │
+  │          monitor · playground · contracts · sdkgen · network    │
+  └─────────────────────────────────────────────────────────────────┘
+          │                    │                    │
+          ▼                    ▼                    ▼
+    PostgreSQL              Redis             Stellar Horizon
+    (workspaces,        (BullMQ queues,       (testnet +
+    watches, history)    rate cache)           mainnet)
+```
 
-### Backend — `apps/api`
-- **NestJS** (Fastify adapter)
-- **TypeORM** + **PostgreSQL**
-- **BullMQ** + **Redis** (webhook job queue)
-- **@stellar/stellar-sdk** (Horizon API)
-- **Swagger** (OpenAPI docs at `/api/docs`)
-
-### Infrastructure
-- **Turborepo** monorepo
-- **Docker Compose** (local Postgres + Redis)
-- Railway (initial deploy) → DigitalOcean (scale)
-
----
-
-## Project Structure
+**Monorepo layout (Turborepo)**
 
 ```
 savitools/
 ├── apps/
-│   ├── web/                    # Next.js frontend
-│   │   └── src/
-│   │       ├── app/
-│   │       │   ├── inspector/  # Transaction Inspector
-│   │       │   ├── sandbox/    # Wallet Sandbox
-│   │       │   ├── composer/   # Transaction Composer
-│   │       │   └── webhooks/   # Webhook Infrastructure
-│   │       ├── components/     # Shared UI components
-│   │       └── lib/
+│   ├── web/                      # Next.js 15 frontend
+│   │   └── src/app/
+│   │       ├── page.tsx          # Home / onboarding
+│   │       ├── inspector/        # Transaction Inspector
+│   │       ├── sandbox/          # Wallet Sandbox
+│   │       ├── composer/         # Transaction Composer
+│   │       ├── simulator/        # Payment Simulator (route finder)
+│   │       ├── webhooks/         # Webhook Tester
+│   │       ├── monitor/          # Ledger Monitor
+│   │       ├── playground/       # API Playground
+│   │       ├── contracts/        # Soroban Deploy Helper
+│   │       ├── sdk/              # SDK Generator
+│   │       └── network/          # Network Status
 │   │
-│   └── api/                    # NestJS backend
-│       └── src/
-│           ├── modules/
-│           │   ├── transaction/ # Transaction decoding & inspection
-│           │   ├── wallet/      # Wallet generation & testnet provisioning
-│           │   ├── webhook/     # Webhook subscriptions & delivery
-│           │   └── simulator/   # Payment path simulation
-│           ├── app.module.ts
-│           └── main.ts
+│   └── api/                      # NestJS backend
+│       └── src/modules/
+│           ├── transaction/       # Horizon lookups, XDR decode
+│           ├── wallet/            # Keypair gen, Friendbot, balances
+│           ├── simulator/         # Path payment route simulation
+│           ├── webhook/           # Test endpoint registration + firing
+│           ├── monitor/           # Horizon SSE streaming, alert rules
+│           ├── playground/        # Spec proxy, API forwarding
+│           ├── contracts/         # Soroban WASM upload + deploy
+│           ├── sdkgen/            # Client code generation
+│           ├── network/           # Fee stats, ledger health
+│           └── auth/              # User accounts, JWT, Fluxa SSO
 │
-├── packages/                   # Shared packages (types, utilities)
 ├── docker-compose.yml
 ├── turbo.json
 └── .env.example
@@ -93,12 +88,15 @@ savitools/
 ## Getting Started
 
 ### Prerequisites
-- Node.js >= 20
+
+- Node.js 20+
 - Docker (for local Postgres + Redis)
 
 ### 1. Install dependencies
 
 ```bash
+git clone https://github.com/Savitura/Savitools
+cd Savitools
 npm install
 ```
 
@@ -106,13 +104,21 @@ npm install
 
 ```bash
 cp .env.example .env
-# Edit .env with your values
 ```
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis connection string |
+| `STELLAR_NETWORK` | `testnet` or `mainnet` |
+| `STELLAR_HORIZON_URL` | Horizon endpoint |
+| `WEBHOOK_SIGNING_SECRET` | HMAC secret for test webhook payloads |
+| `NEXT_PUBLIC_API_URL` | Frontend → API URL (dev: `http://localhost:3001/api`) |
 
 ### 3. Start infrastructure
 
 ```bash
-docker compose up -d
+docker compose up -d     # Postgres + Redis
 ```
 
 ### 4. Run development servers
@@ -125,93 +131,48 @@ npm run dev
 |---|---|
 | Frontend | http://localhost:3000 |
 | API | http://localhost:3001/api |
-| Swagger Docs | http://localhost:3001/api/docs |
+| Swagger docs | http://localhost:3001/api/docs |
 
----
-
-## API Overview
-
-The REST API is versioned under `/api/v1/`. Full interactive documentation is available at `/api/docs` when the API server is running.
-
-### Core Endpoints
-
-```
-GET  /api/v1/transactions/:hash     Inspect and decode a transaction
-POST /api/v1/wallet/generate        Generate a new Stellar keypair
-POST /api/v1/wallet/fund            Fund a testnet account via Friendbot
-POST /api/v1/webhooks               Register a webhook endpoint
-GET  /api/v1/webhooks               List registered webhooks
-DELETE /api/v1/webhooks/:id         Remove a webhook
-POST /api/v1/simulator/payment      Simulate a payment path
-GET  /api/health                    Health check
-```
-
-### Webhook Events
-
-```
-payment.received
-payment.sent
-trustline.created
-account.updated
-asset.received
-transaction.confirmed
-```
-
----
-
-## Development
-
-### Run a single app
+### 5. Run individual apps
 
 ```bash
-# Frontend only
-cd apps/web && npm run dev
-
-# Backend only
-cd apps/api && npm run dev
-```
-
-### Build
-
-```bash
-npm run build
-```
-
-### Lint
-
-```bash
-npm run lint
-```
-
-### Format
-
-```bash
-npm run format
+cd apps/web && npm run dev    # frontend only
+cd apps/api && npm run dev    # API only
 ```
 
 ---
 
-## Monetization Roadmap
+## Development Commands
 
-| Phase | Model | Components |
-|---|---|---|
-| 1 — Adoption | Free | Inspector, Composer, Wallet Sandbox |
-| 2 — Infrastructure | Usage-based | Webhook infra, hosted APIs, analytics |
-| 3 — Enterprise | Subscription | Dedicated infra, SLAs, treasury tooling |
+```bash
+npm run dev        # start all apps in watch mode (Turborepo)
+npm run build      # production build
+npm run lint       # ESLint across all apps
+npm run format     # Prettier
+npm test           # run all tests
+```
+
+---
+
+## How it connects to Savitura
+
+SaviTools is a standalone product with its own users and branding, but it's purpose-built to serve the Savitura ecosystem:
+
+- The **API Playground** is pre-wired to Fluxa and CrowdPay APIs
+- The **Webhook Tester** ships sample payloads for every CrowdPay and Fluxa event
+- The **Contract Deploy Helper** makes it easy to deploy the CrowdPay Soroban escrow contract
+- Connect your Fluxa account in settings to use your real API keys inside SaviTools tools
+
+**Other Savitura projects:**
+- [Fluxa](https://github.com/Savitura/Fluxa) — payment infrastructure API
+- [CrowdPay](https://github.com/Savitura/crowdpay) — crowdfunding platform
 
 ---
 
-## Part of Savitura
+## Contributing
 
-SaviTools is not a standalone product — it is the engineering foundation powering:
-
-- **Fluxa** — payment infrastructure and checkout
-- **CrowdPay** — collaborative funding infrastructure
-
-Everything built here strengthens the entire Savitura ecosystem.
-
----
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Private — Savitura. All rights reserved.
+MIT
