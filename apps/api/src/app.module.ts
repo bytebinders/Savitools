@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { NetworkModule } from './modules/network/network.module';
+import { ComposerModule } from './modules/composer/composer.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { NetworkModule } from './modules/network/network.module';
     AuthModule,
     WorkspaceModule,
     NetworkModule,
+    ComposerModule,
 
     // Feature modules — added as each is built
     // TransactionModule,
