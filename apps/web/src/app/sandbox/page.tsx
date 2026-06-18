@@ -1,57 +1,11 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { useWorkspaceState } from '@/lib/workspace-storage';
+import { Suspense } from 'react';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SandboxTool } from '@/components/tools/sandbox-tool';
 import { ToolPageShell } from '@/components/tools/tool-page-shell';
-import { Suspense } from 'react';
-
-interface SandboxWallet {
-  id: string;
-  label: string;
-  publicKey: string;
-}
-
-interface SandboxWorkspace {
-  wallets: SandboxWallet[];
-}
-
-const DEFAULT_WORKSPACE: SandboxWorkspace = { wallets: [] };
-
-function createWallet(label: string): SandboxWallet {
-  const id = crypto.randomUUID();
-  const publicKey = `G${crypto.randomUUID().replace(/-/g, '').slice(0, 55).toUpperCase()}`;
-
-  return { id, label, publicKey };
-}
-
 
 export default function SandboxPage() {
-  const { data, setData, ready, isAuthenticated } = useWorkspaceState(
-    'sandbox',
-    DEFAULT_WORKSPACE,
-  );
-  const [label, setLabel] = useState('Test wallet');
-
-  async function handleAddWallet(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const wallet = createWallet(label.trim() || 'Test wallet');
-    await setData({
-      ...data,
-      wallets: [wallet, ...data.wallets],
-    });
-    setLabel('Test wallet');
-  }
-
-  async function handleRemoveWallet(id: string) {
-    await setData({
-      ...data,
-      wallets: data.wallets.filter((wallet) => wallet.id !== id),
-    });
-  }
-
   return (
     <>
       <div className="max-w-6xl mx-auto px-6 py-12">

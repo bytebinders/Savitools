@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { PlaygroundModule } from './modules/playground/playground.module';
 import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { NetworkModule } from './modules/network/network.module';
 
@@ -23,6 +24,7 @@ import { NetworkModule } from './modules/network/network.module';
     }),
 
     AuthModule,
+    PlaygroundModule,
     WorkspaceModule,
     NetworkModule,
 
